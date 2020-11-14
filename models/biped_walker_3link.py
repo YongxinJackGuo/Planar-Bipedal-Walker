@@ -1,24 +1,20 @@
-from optimization.opt_traj import get_opt_coeff
 import numpy as np
 from numpy.linalg import inv
+import scipy
 
 class BipedWalker3Link(object):
     def __init__(self):
         # link length and mass are both the same for 2 legs by symmetric
-        self.r = 1  # distance from leg end to hip
+        self.r = 1  # distance from leg end to hip --> leg length
         self.l = 0.5  # distance from hip to torso
         self.m = 5  # weight of legs
         self.mh = 15  # weight of hip
         self.mt = 10  # weight of torso
-        self.epsilon = 0.1
-        self.alpha = 0.9
         self.n = 3  # dof
         self.g = 9.8  # gravity coefficient
-        self.opt_coeff = get_opt_coeff()
+        self.th1d = np.pi/8
+        self.th3d = np.pi/6
 
-    def h_d(self):
-
-        return None
 
     def swing_dynamics(self, x, u):
         D = self.get_D(x)
@@ -30,9 +26,21 @@ class BipedWalker3Link(object):
         xdot = np.concatenate([qdot, qddot])
         return xdot
 
-    def impact_dynamics(self):
+    def impact_dynamics(self, x):
+        # The impact is modeled as an impulse within an infinitesimally small period of time
+        # and can induce instantaneous change in velocity but the positions remain still.
+        # Thus the impact map for joint position q is just through relabeling of coordinates.
+        # by swaping the swing and stance legs (role has changed)
+
 
         return None
+
+    def relabel(self, x):
+        # swap the joint angle for legs
+        x[0], x[1] = x[1], x[0]
+        # swap the joint velocity for legs
+        x[3], x[4] = x[4], x[3]
+        return x
 
     def zero_dynamics(self):
 
@@ -144,26 +152,10 @@ class BipedWalker3Link(object):
 
         return De
 
-
-    def compute_cls_feedback_u(self, x):
-
-        return None
+    def get_E(self, x):
 
 
-    def compute_hzd_feedback_u(self):
-
-        return None
+        return
 
 
-    def compute_L2fy(self, x):
-
-        return None
-
-    def compute_LgLfy(self, x):
-
-        return None
-
-    def compute_phi(self):
-
-        return None
 
