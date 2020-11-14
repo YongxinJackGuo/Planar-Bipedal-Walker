@@ -1,4 +1,4 @@
 /.idea
-/controller/__pycache__
-/models/__pycache__
+/controller/__pycache__/
+/models/__pycache__/
 /.python-version
