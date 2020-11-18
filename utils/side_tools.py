@@ -14,7 +14,7 @@ def hit_ground(t, x, stanceleg_coord, r):
 
     is_swingleg_front = (z1_swing - z1_stance) > 0
     is_swingleg_ground = z2_swing == 0
-    detect_signal = is_swingleg_front & is_swingleg_ground
+    detect_signal = not (is_swingleg_front & is_swingleg_ground)
 
     return detect_signal
 

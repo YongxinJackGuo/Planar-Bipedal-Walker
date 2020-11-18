@@ -14,6 +14,7 @@ class HybridZeroDynamicsController(object):
         self.n = model.n
         # Compute all the required closed form during instantiation.
         self.Lfy, self.L2fy, self.LgLfy = self.get_symbolic_eqns()
+        print("Control input closed form function derivation finished")
 
     def compute_cls_feedback_u(self, x):
         # Parmas:

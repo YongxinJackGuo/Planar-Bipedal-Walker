@@ -22,9 +22,10 @@ class BipedWalker3Link(object):
         C = self.get_C(x, is_sym=False)
         G = self.get_G(x, is_sym=False)
         B = self.get_B()
+        n = self.n
         qdot = x[self.n:]
-        qddot = inv(D) @ (-C @ qdot - G + B @ u)
-        xdot = np.concatenate([qdot, qddot])
+        qddot = inv(D) @ (-C @ qdot.reshape((n, 1)) - G + B @ u)
+        xdot = np.concatenate([qdot, qddot.reshape((n, ))])
         return xdot
 
     def impact_dynamics(self, x):
@@ -33,8 +34,20 @@ class BipedWalker3Link(object):
         # Thus the impact map for joint position q is just through relabeling of coordinates.
         # by swaping the swing and stance legs (role has changed)
 
+        # Construct Impact Model Matrix
+        n = self.n
+        E = self.get_E(x)  # size 2 X 5
+        De = self.get_De(x)  # size 5 X 5
+        imapct_matrix = np.block([[De, -E.T],
+                                  [E, np.zeros((2, 2))]])  # size 7 x 7
+        z1_minus = z2_minus = 0  # the cartesian coordinate of stance leg before impact. Both are 0s.
+        qdote_minus = np.array([x[3], x[4], x[5], z1_minus, z2_minus])
+        after_impact_matrix = inv(imapct_matrix) @ np.block([[(De @ qdote_minus).reshape(5, 1)],
+                                                             [np.zeros((2, 1))]])
+        x[n: 2*n] = after_impact_matrix[0: n, 0].T  # extract post velocity
+        x = self.relabel(x)  # swap the leg coordinate
 
-        return None
+        return x
 
     def relabel(self, x):
         # swap the joint angle for legs
@@ -44,6 +57,7 @@ class BipedWalker3Link(object):
         return x
 
     def zero_dynamics(self):
+        # TODO: Implement the zero dynamics
 
         return None
 
@@ -186,9 +200,15 @@ class BipedWalker3Link(object):
         return De
 
     def get_E(self, x):
+        # TODO: Implement E matrix for impact model
+        r = self.r
+        th1, th2 = x[0], x[1]
+        c1, c2 = np.cos(th1), np.cos(th2)
+        s1, s2 = np.sin(th1), np.sin(th2)
+        E = np.array([[r*c1, -r*c2, 0, 1, 0],
+                      [-r*s1, r*s2, 0, 0, 1]])
 
-
-        return
+        return E
 
 
 
