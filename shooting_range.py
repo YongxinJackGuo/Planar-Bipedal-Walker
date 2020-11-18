@@ -1,25 +1,42 @@
-from pydrake.forwarddiff import jacobian
+# from pydrake.forwarddiff import jacobian
 from pydrake.autodiffutils import AutoDiffXd
 
 import math
-import numpy as np
+import autograd.numpy as np
+from autograd import jacobian
+from numpy.linalg import inv
 from matplotlib import pyplot as plt
 
 
 def f(t):
-    return np.array([1.5 - 0.5 *(t - 2.5)])
+    f = inv(np.array([[1.5 - 0.5 * (t - 2.5), 2 * t[0]],
+              [2 * t[1] ** 3, t[0] ** 2]]))
+    return f
 def g(t):
     t1 = np.sin(t[0])
     t2 = np.cos(t[1])
-    return np.array([1.5 - 0.5 *(t1 - 2.5) + t2**3, 5.0 + t1**2 + t2**3, 2.0 + t2**2])
+    g = np.array([])
+    g = np.array([0.5 - 0.5 *(t1 - 2.5) + t2**3, 5.0 + t1**2 + t2**3, 2.0 + t2**2])
+    return g
 
 x = np.array([np.pi/3, np.pi/3, 0, 0])
-def z(x):
-    print(x)
-    z = jacobian(g, x)
 
-j = jacobian(z, x)
-print(j)
+def gg(t):
+    a = np.array([[2*t[0]**3, 3 * np.cos(t[1]), 3],
+                  [12+t[1]**2, 2, 3],
+                  [t[0]**3, np.cos(t[0])*t[1], 2]]);
+    gg = jacobian(g)
+    return gg(t) @ inv(a) @ np.array([2,3,4])
+
+def ggg(t):
+    a = np.array([2 * t[0] ** 3, 3 * np.cos(t[1]), 3, 4]);
+    temp = jacobian(gg)
+    return temp(t) @ a
+
+j = jacobian(f)
+print(j(x))
+
+
 
 
 # def calc(th1):

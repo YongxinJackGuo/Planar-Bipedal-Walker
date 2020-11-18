@@ -1,7 +1,7 @@
 from optimization.opt_traj import get_opt_coeff
 import numpy as np
-from pydrake.forwarddiff import jacobian
 from numpy.linalg import inv
+from sympy import *
 
 class HybridZeroDynamicsController(object):
     def __init__(self, model):
@@ -12,55 +12,37 @@ class HybridZeroDynamicsController(object):
         self.epsilon = 0.1
         self.alpha = 0.9
         self.n = model.n
+        # Compute all the required closed form during instantiation.
+        self.Lfy, self.L2fy, self.LgLfy = self.get_symbolic_eqns()
 
     def compute_cls_feedback_u(self, x):
         # Parmas:
         # Input: x --> (n*2) X 1. In 3-link case --> 6X1
         # Output: u --> (n-1)X1. In 3-link case --> 2X1
+        # Motivation for using sympy. Calculate the closed form just once and use that
+        # for evaluating any state values is faster than computing the jacobian everytime.
+        # Ode takes in control input in every infinitesimal interval.
 
-        LgLfy = self.compute_LgLfy(x)
-        L2fy = self.compute_L2fy(x)
-        Lfy = self.compute_Lfy(x)
+        th1, th2, th3, th1dot, th2dot, th3dot = x[0], x[1], x[2], x[3], x[4], x[5]
+        LgLfy = self.LgLfy
+        L2fy = self.L2fy
+        Lfy = self.Lfy
+
         y = self.get_y(x)
-        psi = self.compute_psi_vec(y, Lfy)
+        Lfy_value = Lfy(th1, th2, th3, th1dot, th2dot, th3dot)  # data type: list
+        psi = self.compute_psi_vec(y, np.asarray(Lfy_value))
 
-        u = inv(LgLfy) @ (psi - L2fy)
+        L2fy_value = L2fy(th1, th2, th3, th1dot, th2dot, th3dot)  # data type: list
+        LgLfy_value = LgLfy(th1, th2, th3, th1dot, th2dot, th3dot)  # data type: list
+        LgLfy_inv_value = inv(np.asarray(LgLfy_value))
+        u = LgLfy_inv_value @ (psi - np.asarray(L2fy_value))
+        # print("My LgLfy value is: ", np.asarray(LgLfy_value))
 
         return u
 
     def compute_hzd_feedback_u(self):
         return None
 
-    def compute_L2fy(self, x):
-        # Parmas:
-        # Input: x --> (n*2) X 1. In 3-link case --> 6X1
-        # Output: Lfy size = (n-1) X 1. In 3-link case --> 2X1
-
-        dLfy_dx = jacobian(self.compute_Lfy, x)
-        L2fy = dLfy_dx @ self.get_f(x)
-
-        return L2fy
-
-    def compute_LgLfy(self, x):
-        # Parmas:
-        # Input: x --> (n*2) X 1. In 3-link case --> 6X1
-        # Output: LgLfy size = (n-1) X 2. In 3-link case --> 2X2
-
-        dLfy_dx = jacobian(self.compute_Lfy, x)
-        LgLfy = dLfy_dx @ self.get_g(x)
-
-        return LgLfy
-
-    def compute_Lfy(self, x):
-        # Parmas:
-        # Input: x --> (n*2) X 1. In 3-link case --> 6X1
-        # Output: Lfy size = (n-1) X 1. In 3-link case --> 2X1
-
-        dydx = jacobian(self.get_y, x)
-        # multiply f, which is xdot
-        Lfy = dydx @ self.get_f(x)
-
-        return Lfy
 
     def get_f(self, x):
         # Parmas:
@@ -69,10 +51,11 @@ class HybridZeroDynamicsController(object):
 
         n = self.n
         model = self.model
-        D = model.get_D(x)
-        C = model.get_C(x)
-        G = model.get_G(x)
-        f = np.block([x[0: n], inv(D) @ (-C @ x[0: n] - G)])
+        D = Matrix(model.get_D(x, is_sym=True))
+        C = Matrix(model.get_C(x, is_sym=True))
+        G = Matrix(model.get_G(x, is_sym=True))
+
+        f = np.block([[x[n: 2*n].reshape(n, 1)], [D.inv() @ ((-C @ x[n: 2*n]).reshape(n, 1) - G)]])
 
         return f
 
@@ -82,13 +65,68 @@ class HybridZeroDynamicsController(object):
         # Output: g size = (n*2) X 2. In 3-link case --> 6X2
 
         model = self.model
-        D = model.get_D(x)
-        B = model.get_B()
+        D = Matrix(model.get_D(x, is_sym=True))
+        B = Matrix(model.get_B())
         n = self.n
 
         g = np.block([[np.zeros((n, n-1))],
-                      [inv(D) @ B]])
+                      [D.inv() @ B]])
         return g
+
+    def get_Lfy(self, x):
+        # Parmas:
+        # Input: x --> (n*2) X 1. In 3-link case --> 6X1
+        # Output: Lfy size = (n-1) X 1. In 3-link case --> 2X1
+        y = Matrix(self.get_y(x))
+        dydx = y.jacobian(x)
+        Lfy = dydx @ self.get_f(x)
+
+        return Lfy
+
+    def get_dLfydx(self, x, Lfy):
+        # Params:
+        # Input: Lfy must be in Matrix type defined in sympy
+
+        dLfydx = Lfy.jacobian(x)
+
+        return dLfydx
+
+    def get_L2fy(self, x, dLfydx):
+        # Parmas:
+        # Input: x --> (n*2) X 1. In 3-link case --> 6X1
+        # Output: Lfy size = (n-1) X 1. In 3-link case --> 2X1
+        L2fy = dLfydx @ self.get_f(x)
+
+        return L2fy
+
+    def get_LgLfy(self, x, dLfydx):
+        # Parmas:
+        # Input: x --> (n*2) X 1. In 3-link case --> 6X1
+        # Output: LgLfy size = (n-1) X 2. In 3-link case --> 2X2
+
+        LgLfy = dLfydx @ self.get_g(x)
+
+        return LgLfy
+
+    def get_symbolic_eqns(self):
+        # define state symbols
+        th1, th2, th3, th1dot, th2dot, th3dot = symbols('th1 th2 th3 th1dot th2dot th3dot')
+        x = np.array([th1, th2, th3, th1dot, th2dot, th3dot])
+
+        # Get dLfydx expression for later used in L2fy and LgLfy. Only evaluated once here.
+        Lfy_eqn = self.get_Lfy(x)
+        Lfy = lambdify(x, Lfy_eqn)
+        dLfydx = self.get_dLfydx(x, Lfy_eqn)
+
+        # Get L2fy equation expression and function
+        L2fy_eqn = self.get_L2fy(x, dLfydx)  # get the expression
+        L2fy = lambdify(x, L2fy_eqn)  # get the function for L2fy
+
+        # Get LgLfy equation expression and function
+        LgLfy_eqn = self.get_LgLfy(x, dLfydx)
+        LgLfy = lambdify(x, LgLfy_eqn)
+
+        return Lfy, L2fy, LgLfy
 
 
     def compute_psi_vec(self, y, Lfy):
@@ -102,12 +140,14 @@ class HybridZeroDynamicsController(object):
         for i in range(n-1):
             psi_vec[i] = self.compute_psi_scalar(y[i], Lfy[i])
 
+        psi_vec = psi_vec.reshape(n-1, 1)
         return psi_vec
 
     def compute_psi_scalar(self, x1, x2):
         alpha = self.alpha
         phi = x1 + (0.5 - alpha) * np.sign(x2) * np.abs(x2)**(2 - alpha)
         psi_scalar = -np.sign(x2) * np.abs(x2)**alpha - np.sign(phi) * np.abs(phi)**(alpha/2 - alpha)
+
         return psi_scalar
 
     def get_y(self, x):
@@ -123,6 +163,9 @@ class HybridZeroDynamicsController(object):
         th1, th2, th3 = x[0], x[1], x[2]
         h1d = a00 + a01 * th1 + a02 * th1**2 + a03 * th1**3
         h2d = -th1 + (a10 + a11 * th1 + a12 * th1**2 + a13 * th1**3) * (th1 - th1d) * (th1 + th1d)
+        # Use the following two desired trajectory when doing the LgLfy checking.
+        # h1d = 0
+        # h2d = -th1
         h1 = th3 - h1d
         h2 = th2 - h2d
         # define the system output

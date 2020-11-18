@@ -25,3 +25,22 @@ def get_swingleg_end_coord(x, stanceleg_coord, r):
     swingleg_end_coord_z2 = stanceleg_coord[1] + r * (np.cos(th1) - np.cos(th1))
 
     return (swingleg_end_coord_z1, swingleg_end_coord_z2)
+
+def test_LgLfy(x, m, mh, mt, l, r):
+    # Compute the guaranteed correct LgLfy value from closed form dynamics based on Dr.Grizzles' Literature
+    # This functions serves as a helper tool that checks the sympy implementation in hzd_controller is correct
+    th1, th2, th3 = x[0], x[1], x[2]
+    c12 = np.cos(th1 - th2)
+    c13 = np.cos(th1 - th3)
+
+    r11 = ((m*r**3)/4) * ((5/4)*m*r + mh*r + mt*r - m*r*c12**2 + mt*l*c13)
+    r12 = ((m*r**3)/4) * ((5/4)*m*r + mh*r + mt*r - m*r*c12**2 + 2*mt*l*c12*c13)
+    r21 = (-m*mt*l*r**2/4) * (1 + 2*c12) * (r*c13 + l)
+    r22 = (-mt*l*r**2/4) * (5*m*l + 4*mh*l + 4*mt*l + m*r*c13 + 2*m*r*c12*c13 - 4*mt*l*c13**2 + 2*m*l*c12)
+
+    detD = (m*mt*r**4*l**2/4) * ((5/4)*m + mh + mt - m*c12**2 - mt*c13**2)
+
+    LgLfy = (1/detD) * np.array([[r11, r12],
+                                 [r21, r22]])
+
+    return LgLfy

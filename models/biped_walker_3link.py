@@ -1,6 +1,7 @@
-import numpy as np
+import numpy as np # import autograd version of numpy for jacobian calculation in controller.
 from numpy.linalg import inv
 import scipy
+from sympy import *
 
 class BipedWalker3Link(object):
     def __init__(self):
@@ -17,9 +18,9 @@ class BipedWalker3Link(object):
 
 
     def swing_dynamics(self, x, u):
-        D = self.get_D(x)
-        C = self.get_C(x)
-        G = self.get_G(x)
+        D = self.get_D(x, is_sym=False)
+        C = self.get_C(x, is_sym=False)
+        G = self.get_G(x, is_sym=False)
         B = self.get_B()
         qdot = x[self.n:]
         qddot = inv(D) @ (-C @ qdot - G + B @ u)
@@ -46,7 +47,9 @@ class BipedWalker3Link(object):
 
         return None
 
-    def get_D(self, x):
+    def get_D(self, x, is_sym):
+        # Params:
+        # Output: n X n
         m = self.m
         l = self.l
         mh = self.mh
@@ -54,21 +57,31 @@ class BipedWalker3Link(object):
         r = self.r
         n = self.n
         th1, th2, th3 = x[0], x[1], x[2]
-        c12, c13 = np.cos(th1 - th2), np.cos(th1 - th3)
+        if is_sym == False:
+            c12, c13 = np.cos(th1 - th2), np.cos(th1 - th3)
+        else:
+            c12, c13 = cos(th1 - th2), cos(th1 - th3)
 
-        D = np.zeros((n, n))
-        D[0, 0] = ((5/4)*m + mh + mt) * r**2
-        D[0, 1] = -(1/2) * m * (r**2) * c12
-        D[0, 2] = mt * r * l * c13
-        D[1, 0] = -(1/2) * m * (r**2) * c12
-        D[1, 1] = (1/4) * m * r**2
-        D[2, 0] = mt * r * l * c13
-        D[2, 2] = mt * l**2
+        d00 = ((5/4)*m + mh + mt) * r**2
+        d01 = -(1/2) * m * (r**2) * c12
+        d02 = mt * r * l * c13
+        d10 = -(1/2) * m * (r**2) * c12
+        d11 = (1/4) * m * r**2
+        d20 = mt * r * l * c13
+        d22 = mt * l**2
+        # Please be noted. D matrix must be defined in this way as required by sympy package
+        # for jacobian calculation purpose in hzd_controller. Don't use index assignment!!!
+        D = np.array([[d00, d01, d02],
+                      [d10, d11, 0],
+                      [d20, 0, d22]])
 
         return D
 
 
-    def get_C(self, x):
+    def get_C(self, x, is_sym):
+        # Params:
+        # Output: n X n
+
         m = self.m
         l = self.l
         mh = self.mh
@@ -77,18 +90,29 @@ class BipedWalker3Link(object):
         n = self.n
         th1, th2, th3 = x[0], x[1], x[2]
         th1dot, th2dot, th3dot = x[3], x[4], x[5]
-        s12, s13 = np.sin(th1 - th2), np.sin(th1 - th3)
+        if is_sym == False:
+            s12, s13 = np.sin(th1 - th2), np.sin(th1 - th3)
+        else:
+            s12, s13 = sin(th1 - th2), sin(th1 - th3)
 
-        C = np.zeros((n, n))
-        C[0, 1] = -(1/2) * m * (r**2) * s12 * th2dot
-        C[0, 2] = mt * r * l * s13 * th3dot
-        C[1, 0] = (1/2) * m * (r**2) * s12 * th1dot
-        C[2, 0] = -mt * r * l * s13 * th1dot
+        c01 = -(1/2) * m * (r**2) * s12 * th2dot
+        c02 = mt * r * l * s13 * th3dot
+        c10 = (1/2) * m * (r**2) * s12 * th1dot
+        c20 = -mt * r * l * s13 * th1dot
+
+        # Please be noted. C matrix must be defined in this way as required by sympy package
+        # for jacobian calculation purpose in hzd_controller. Don't use index assignment!!!
+        C = np.array([[0, c01, c02],
+                      [c10, 0, 0],
+                      [c20, 0, 0]])
 
         return C
 
 
-    def get_G(self, x):
+    def get_G(self, x, is_sym):
+        # Params:
+        # Output: n X 1
+
         m = self.m
         l = self.l
         mh = self.mh
@@ -99,12 +123,21 @@ class BipedWalker3Link(object):
         th1 = x[0]
         th2 = x[1]
         th3 = x[2]
-        s1, s2, s3 = np.sin(th1), np.sin(th2), np.sin(th3)
+        if is_sym == False:
+            s1, s2, s3 = np.sin(th1), np.sin(th2), np.sin(th3)
+        else:
+            s1, s2, s3 = sin(th1), sin(th2), sin(th3)
 
         G = np.zeros(n,)
-        G[0] = -(1/2) * g * (2 * mh + 3 * m + 2 * mt) * r * s1
-        G[1] = (1/2) * g * m * r * s2
-        G[2] = -g * mt * l * s3
+        g0 = -(1/2) * g * (2 * mh + 3 * m + 2 * mt) * r * s1
+        g1 = (1/2) * g * m * r * s2
+        g2 = -g * mt * l * s3
+
+        # Please be noted. G matrix must be defined in this way as required by sympy package
+        # for jacobian calculation purpose in hzd_controller. Don't use index assignment!!!
+        G = np.array([[g0],
+                      [g1],
+                      [g2]])
 
         return G
 
