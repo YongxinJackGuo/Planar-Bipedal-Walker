@@ -10,6 +10,7 @@ class Simulator(object):
     def simulate_full_model(self, x0, tf):
         model = self.model
         controller = self.controller
+        swingleg_end_angle = model.swingleg_end_angle
         r = model.r
 
         impact_times = 0
@@ -32,7 +33,7 @@ class Simulator(object):
                 return model.swing_dynamics(x, curr_u)
 
             def hit_ground(t, x):
-                return side_tools.hit_ground(t, x, curr_stanceleg_coord, r)
+                return side_tools.hit_ground(t, x, swingleg_end_angle)
             #  the events should terminate the ODE solver when event is reached
             hit_ground.terminal = 1
 
@@ -44,20 +45,20 @@ class Simulator(object):
             t.append(curr_t)
             x.append(curr_x)
             u.append(curr_u)
-            # print("simulation at ", curr_t, " seconds")
+            print("simulation at ", curr_t, " seconds")
             print("stance leg angle: ", curr_x[0] * 180 / np.pi)
             print("swing leg angle: ", curr_x[1] * 180 / np.pi)
             print("=============")
-            # print("current stance coordinate: ", curr_stanceleg_coord)
             # TODO: impact model when events happened (define the resets)
             if len(sol.t_events[0]) != 0:  # impact happens
+                # print("current stance coordinate: ", curr_stanceleg_coord)
                 z1_stance = side_tools.get_swingleg_end_coord(curr_x, curr_stanceleg_coord, r)[0]
-                curr_stanceleg_coord = (z1_stance + stanceleg_coord[-1][0], 0)
+                curr_stanceleg_coord = (z1_stance, 0)
                 stanceleg_coord.append(curr_stanceleg_coord)
                 # impact map, resets the state
                 curr_x = model.impact_dynamics(curr_x)
                 impact_times += 1
-                # print("Impact happens", impact_times, "time(s) at", curr_t, "seconds")
+                print("Impact happens", impact_times, "time(s) at", curr_t, "seconds")
 
         return x, u, t
 

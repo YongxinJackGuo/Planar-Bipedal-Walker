@@ -15,6 +15,7 @@ class BipedWalker3Link(object):
         self.g = 9.8  # gravity coefficient
         self.th1d = np.pi/8
         self.th3d = np.pi/6
+        self.swingleg_end_angle = -np.pi/8
 
 
     def swing_dynamics(self, x, u):

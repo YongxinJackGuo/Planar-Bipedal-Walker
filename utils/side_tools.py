@@ -2,19 +2,16 @@ import numpy as np
 
 
 # TODO: Define events for ODE
-def hit_ground(t, x, stanceleg_coord, r):
+def hit_ground(t, x, swingleg_end_angle):
     #  define guards (a set for triggering hybrid system transition).
     #  Define the events when the horizontal coordinate of swing leg
     #  is larger than stance leg and vertial coordinate reaches zero
-    z1_stance = stanceleg_coord[0]
-    z2_stance = stanceleg_coord[1]
-    swingleg_coord = get_swingleg_end_coord(x, stanceleg_coord, r)
-    z1_swing = swingleg_coord[0]
-    z2_swing = swingleg_coord[1]
+    #  However, the method is not used here since the swing leg will
+    #  always touch or penetrate the ground. Instead, we monitor the
+    #  end angle of the swing leg has been reached or not.
 
-    is_swingleg_front = (z1_swing - z1_stance) > 0
-    is_swingleg_ground = z2_swing == 0
-    detect_signal = not (is_swingleg_front & is_swingleg_ground)
+    is_hit = x[1] == swingleg_end_angle
+    detect_signal = not is_hit
 
     return detect_signal
 
@@ -44,3 +41,21 @@ def test_LgLfy(x, m, mh, mt, l, r):
                                  [r21, r22]])
 
     return LgLfy
+
+
+def hit_ground_for_5link():
+    # z1_stance = stanceleg_coord[0]
+    # z2_stance = stanceleg_coord[1]
+    # swingleg_coord = get_swingleg_end_coord(x, stanceleg_coord, r)
+    # z1_swing = swingleg_coord[0]
+    # z2_swing = swingleg_coord[1]
+
+    # is_swingleg_front = (z1_swing - z1_stance) > 0
+    # is_swingleg_ground = z2_swing == 0
+    # legs_not_same_place = x[0] != x[1]
+    # print("z1 swing is: ", sz1_swing, "z1 stance is: ", z1_stance, " is swingleg front: ", is_swingleg_front)
+    # print("is swingleg_ground: ", is_swingleg_ground)
+    # print("are legs not at the same postion: ", legs_not_same_place)
+    # print("======================================================")
+
+    return None
