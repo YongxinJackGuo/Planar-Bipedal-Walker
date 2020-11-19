@@ -11,7 +11,7 @@ from sandbox.biped_walker_sim import Simulator
 
 
 pi = np.pi
-x0 = np.array([pi/8, -pi/8, pi/6, 1.6, -1.6, 0])
+x0 = np.array([pi/8, -pi/8, pi/6, 2, 2, 0])
 tf = 3
 # u = np.array([1,1])
 walker = BipedWalker3Link()
