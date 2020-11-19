@@ -31,7 +31,7 @@ class HybridZeroDynamicsController(object):
 
         y = self.get_y(x)
         Lfy_value = Lfy(th1, th2, th3, th1dot, th2dot, th3dot)  # data type: list
-        psi = self.compute_psi_vec(y, np.asarray(Lfy_value))
+        psi = (1/self.epsilon**2) * self.compute_psi_vec(y, self.epsilon * np.asarray(Lfy_value))
 
         L2fy_value = L2fy(th1, th2, th3, th1dot, th2dot, th3dot)  # data type: list
         LgLfy_value = LgLfy(th1, th2, th3, th1dot, th2dot, th3dot)  # data type: list
@@ -146,8 +146,8 @@ class HybridZeroDynamicsController(object):
 
     def compute_psi_scalar(self, x1, x2):
         alpha = self.alpha
-        phi = x1 + (0.5 - alpha) * np.sign(x2) * np.abs(x2)**(2 - alpha)
-        psi_scalar = -np.sign(x2) * np.abs(x2)**alpha - np.sign(phi) * np.abs(phi)**(alpha/2 - alpha)
+        phi = x1 + (1 / (2 - alpha)) * np.sign(x2) * np.abs(x2)**(2 - alpha)
+        psi_scalar = -np.sign(x2) * np.abs(x2)**alpha - np.sign(phi) * np.abs(phi)**(alpha/(2 - alpha))
 
         return psi_scalar
 

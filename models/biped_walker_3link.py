@@ -16,6 +16,7 @@ class BipedWalker3Link(object):
         self.th1d = np.pi/8
         self.th3d = np.pi/6
         self.swingleg_end_angle = -np.pi/8
+        self.hit_threshold = 0.01  # a threshold value that determines the swing leg hits the ground.
 
 
     def swing_dynamics(self, x, u):
@@ -27,6 +28,7 @@ class BipedWalker3Link(object):
         qdot = x[self.n:]
         qddot = inv(D) @ (-C @ qdot.reshape((n, 1)) - G + B @ u)
         xdot = np.concatenate([qdot, qddot.reshape((n, ))])
+
         return xdot
 
     def impact_dynamics(self, x):
@@ -41,13 +43,12 @@ class BipedWalker3Link(object):
         De = self.get_De(x)  # size 5 X 5
         imapct_matrix = np.block([[De, -E.T],
                                   [E, np.zeros((2, 2))]])  # size 7 x 7
-        z1_minus = z2_minus = 0  # the cartesian coordinate of stance leg before impact. Both are 0s.
-        qdote_minus = np.array([x[3], x[4], x[5], z1_minus, z2_minus])
+        z1dot_minus = z2dot_minus = 0  # the velocity of stance leg before impact. Both are 0s.
+        qdote_minus = np.array([x[3], x[4], x[5], z1dot_minus, z2dot_minus])
         after_impact_matrix = inv(imapct_matrix) @ np.block([[(De @ qdote_minus).reshape(5, 1)],
                                                              [np.zeros((2, 1))]])
         x[n: 2*n] = after_impact_matrix[0: n, 0].T  # extract post velocity
         x = self.relabel(x)  # swap the leg coordinate
-
         return x
 
     def relabel(self, x):

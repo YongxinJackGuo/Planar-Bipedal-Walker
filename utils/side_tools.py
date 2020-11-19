@@ -2,7 +2,7 @@ import numpy as np
 
 
 # TODO: Define events for ODE
-def hit_ground(t, x, swingleg_end_angle):
+def hit_ground(t, x, swingleg_end_angle, threshold):
     #  define guards (a set for triggering hybrid system transition).
     #  Define the events when the horizontal coordinate of swing leg
     #  is larger than stance leg and vertial coordinate reaches zero
@@ -10,7 +10,7 @@ def hit_ground(t, x, swingleg_end_angle):
     #  always touch or penetrate the ground. Instead, we monitor the
     #  end angle of the swing leg has been reached or not.
 
-    is_hit = x[1] == swingleg_end_angle
+    is_hit = (x[1] - swingleg_end_angle) < threshold
     detect_signal = not is_hit
 
     return detect_signal

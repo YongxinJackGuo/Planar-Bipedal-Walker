@@ -11,13 +11,14 @@ from sandbox.biped_walker_sim import Simulator
 
 
 pi = np.pi
-x0 = np.array([pi/8, -pi/8, pi/6, 1, -1, 0.2])
+x0 = np.array([pi/8, -pi/8, pi/6, 1.6, -1.6, 0])
 tf = 3
 # u = np.array([1,1])
 walker = BipedWalker3Link()
 hzd_controller = HybridZeroDynamicsController(walker)
 walkerSim = Simulator(walker, hzd_controller)
-x, u, t = walkerSim.simulate_full_model(x0, tf)
+x, u, stanceleg_coord, t = walkerSim.simulate_full_model(x0, tf)
+print("stance leg coordinate are: ", stanceleg_coord)
 
 # print("States Simulated: ", x)
 # print("Control Imposed:", u)
