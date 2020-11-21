@@ -6,6 +6,8 @@ import autograd.numpy as np
 from autograd import jacobian
 from numpy.linalg import inv
 from matplotlib import pyplot as plt
+import matplotlib.animation as animation
+
 
 
 def f(t):
@@ -33,20 +35,37 @@ def ggg(t):
     temp = jacobian(gg)
     return temp(t) @ a
 
-j = jacobian(f)
-print(j(x))
 
 
 
 
-# def calc(th1):
-#     return 0.512 + 0.073 * th1 + 0.035 * th1**2 - 0.819*th1**3
+def calc(th1):
+    return 0.512 + 0.073 * th1 + 0.035 * th1**2 - 0.819*th1**3
+
+th1 = np.linspace(-np.pi/8, np.pi/8, 100)
+
+th3 = calc(th1)
+
+fig1 = plt.figure()
+
+# line = plt.Line2D((2, 8), (6, 6), lw=2.5, color='r')
+# line1 = plt.Line2D((5, 8), (4, 6), lw=2.5, color='r')
 #
-# th1 = np.linspace(-np.pi/8, np.pi/8, 100)
-#
-# th3 = calc(th1)
-#
-# plt.figure()
-# plt.ylim([0, 180])
-# plt.plot(th1 * 180/np.pi, th3 * 180/np.pi)
+# plt.gca().add_line(line)
+# plt.gca().add_line(line1)
+
 # plt.show()
+
+def update(frame):
+    line = plt.Line2D((2*frame, 8), (6*frame, 6), lw=2.5, color='r')
+    line1 = plt.Line2D((-2*frame, 8), (-6*frame, 6), lw=2.5, color='g')
+    plt.gca().add_line(line)
+    plt.gca().add_line(line1)
+    plt.legend("test")
+    plt.xlim([-100, 100])
+    plt.ylim([-100, 100])
+    return plt
+
+
+ani = animation.FuncAnimation(fig1, update, frames=[i for i in range(10)], blit=False, repeat=False, interval=10)
+plt.show()

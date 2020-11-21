@@ -1,12 +1,20 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 from utils import side_tools
-from .animation import animate
+from .animator import WalkerAnimator
+from matplotlib import pyplot as plt
 
 class Simulator(object):
-    def __init__(self, model, controller):
+    def __init__(self, model, controller, walker_type):
         self.model = model
         self.controller = controller
+        self.x = []
+        self.u = []
+        self.stanceleg_coord = []
+        self.t = []
+        self.tf = 0
+        self.walker_type = walker_type
+        self.step_interval_sample_count = []
 
     def simulate_full_model(self, x0, tf):
         model = self.model
@@ -22,12 +30,15 @@ class Simulator(object):
         u = []  # get the controller value at x
         t = [t0]
         stanceleg_coord = [(0, 0)]
+        step_interval_sample_count = [];  # counts how many data points at each step interval
 
         curr_x = x0
         curr_t = t0
         curr_stanceleg_coord = (0, 0)
 
+
         while curr_t < tf:
+            hit_flag = False  # turn off the flag until impact comes
             curr_u = controller.compute_cls_feedback_u(curr_x)  # Feedback Control
 
             # define an autonomous ODE
@@ -52,12 +63,33 @@ class Simulator(object):
                 z1_stance = side_tools.get_swingleg_end_coord(curr_x, curr_stanceleg_coord, r)[0]
                 curr_stanceleg_coord = (z1_stance, 0)
                 stanceleg_coord.append(curr_stanceleg_coord)
+                step_interval_sample_count.append(len(x))
                 # impact map, resets the state
                 curr_x = model.impact_dynamics(curr_x)
                 impact_times += 1
+                hit_flag = True  # turn on flag before it gets into next continuous dynamics phase.
                 print("Impact happens", impact_times, "time(s) at", curr_t, "seconds")
 
+        # incoporate the last interval if it did not encounter impact in last dt second
+        if hit_flag == False:
+            step_interval_sample_count.append(len(x))
+        self.step_interval_sample_count = step_interval_sample_count  # for animation
+
+        # update class member
+        self.x, self.u, self.stanceleg_coord, self.t, self.tf = x, u, stanceleg_coord, t, tf
+
+        # print some meaningful information
+        print("stance leg coordinate are: ", stanceleg_coord)
+
         return x, u, stanceleg_coord, t
+
+    def animate(self, mass_center_size, mass_center_color, link_width, link_color, save):
+        biped_walker_animator = WalkerAnimator(self.model, self.walker_type, mass_center_size,
+                                               mass_center_color, link_width, link_color)
+        biped_walker_animator.animate(self.x, self.stanceleg_coord, self.step_interval_sample_count, self.tf, save)
+
+        return None
+
 
     def simulate_zero_dynamics(self):
 

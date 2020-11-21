@@ -37,6 +37,7 @@ class BipedWalker3Link(object):
         # Thus the impact map for joint position q is just through relabeling of coordinates.
         # by swaping the swing and stance legs (role has changed)
 
+        x_copy = x.copy()
         # Construct Impact Model Matrix
         n = self.n
         E = self.get_E(x)  # size 2 X 5
@@ -47,16 +48,16 @@ class BipedWalker3Link(object):
         qdote_minus = np.array([x[3], x[4], x[5], z1dot_minus, z2dot_minus])
         after_impact_matrix = inv(imapct_matrix) @ np.block([[(De @ qdote_minus).reshape(5, 1)],
                                                              [np.zeros((2, 1))]])
-        x[n: 2*n] = after_impact_matrix[0: n, 0].T  # extract post velocity
-        x = self.relabel(x)  # swap the leg coordinate
-        return x
+        x_copy[n: 2*n] = after_impact_matrix[0: n, 0].T  # extract post velocity
+        self.relabel(x_copy)  # swap the leg coordinate
+        return x_copy
 
     def relabel(self, x):
         # swap the joint angle for legs
         x[0], x[1] = x[1], x[0]
         # swap the joint velocity for legs
         x[3], x[4] = x[4], x[3]
-        return x
+        return None
 
     def zero_dynamics(self):
         # TODO: Implement the zero dynamics
