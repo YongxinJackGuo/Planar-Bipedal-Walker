@@ -83,10 +83,11 @@ class Simulator(object):
 
         return x, u, stanceleg_coord, t
 
-    def animate(self, mass_center_size, mass_center_color, link_width, link_color, save):
+    def animate(self, mass_center_size, mass_center_color, link_width, link_color, save, display):
         biped_walker_animator = WalkerAnimator(self.model, self.walker_type, mass_center_size,
                                                mass_center_color, link_width, link_color)
-        biped_walker_animator.animate(self.x, self.stanceleg_coord, self.step_interval_sample_count, self.tf, save)
+        biped_walker_animator.animate(self.x, self.stanceleg_coord, self.step_interval_sample_count,
+                                      self.tf, save, display)
 
         return None
 

@@ -15,13 +15,15 @@ class WalkerAnimator(object):
         self.link_color = link_color
 
 
-    def animate(self, x, stanceleg_coord, step_interval_sample_count, tf, save):
+    def animate(self, x, stanceleg_coord, step_interval_sample_count, tf, save, display):
         # TODO: Finish the animation code
-        ani = self.generate_walker(x, stanceleg_coord, step_interval_sample_count, tf)
-        plt.show()
+        ani, fig= self.generate_walker(x, stanceleg_coord, step_interval_sample_count, tf)
+        if display is True:
+            plt.show()
         if save is True:
             ani.save("3_link_Planar_Walker_Demo.gif")
             print('The demo video is successfully saved!')
+            fig.savefig('demo')
         return None
 
     def generate_walker(self, x, stanceleg_coord, step_interval_sample_count, tf):
@@ -72,7 +74,7 @@ class WalkerAnimator(object):
                 interval_start_index = interval_end_index
 
             # define a frame update function
-            fig1 = plt.figure(figsize=(10,4))
+            fig1 = plt.figure(figsize=(10, 4))
             ax = plt.axes()
             hip_traj_x, hip_traj_y, stance_traj_x, stance_traj_y = [], [], [], []
             swing_traj_x, swing_traj_y, torso_traj_x, torso_traj_y = [], [], [], []
@@ -113,7 +115,8 @@ class WalkerAnimator(object):
 
             ani = animation.FuncAnimation(fig1, update, frames=[i for i in range(n_sample)], blit=False, repeat=False,
                                           interval=interval)
-            return ani
+
+            return ani, fig1
 
         if self.walker_type == "5link":
             # TODO: add 5 link

@@ -3,6 +3,7 @@ import numpy as np
 from controllers.hzd_controller import HybridZeroDynamicsController
 from utils import side_tools
 from sandbox.biped_walker_sim import Simulator
+from matplotlib import pyplot as plt
 
 
 
@@ -13,7 +14,8 @@ walker = BipedWalker3Link()
 hzd_controller = HybridZeroDynamicsController(walker)
 walkerSim = Simulator(walker, hzd_controller, walker_type="3link")
 x, u, stanceleg_coord, t = walkerSim.simulate_full_model(x0, tf)
-walkerSim.animate(mass_center_size=0.06, mass_center_color='b', link_width=2.0, link_color='g', save=False)
+walkerSim.animate(mass_center_size=0.06, mass_center_color='b', link_width=2.0,
+                  link_color='g', save=False, display=True)
 
 
 
