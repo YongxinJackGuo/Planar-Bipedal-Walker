@@ -7,13 +7,13 @@ from sandbox.biped_walker_sim import Simulator
 
 
 pi = np.pi
-x0 = np.array([pi/8, -pi/8, pi/6, 5, -5, 0])
+x0 = np.array([pi/8, -pi/8, pi/4, 5, -5, 0])
 tf = 3
 walker = BipedWalker3Link()
 hzd_controller = HybridZeroDynamicsController(walker)
 walkerSim = Simulator(walker, hzd_controller, walker_type="3link")
 x, u, stanceleg_coord, t = walkerSim.simulate_full_model(x0, tf)
-walkerSim.animate(mass_center_size=0, mass_center_color=0, link_width=2.0, link_color='g', save=True)
+walkerSim.animate(mass_center_size=0.06, mass_center_color='b', link_width=2.0, link_color='g', save=False)
 
 
 

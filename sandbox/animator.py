@@ -18,9 +18,10 @@ class WalkerAnimator(object):
     def animate(self, x, stanceleg_coord, step_interval_sample_count, tf, save):
         # TODO: Finish the animation code
         ani = self.generate_walker(x, stanceleg_coord, step_interval_sample_count, tf)
+        plt.show()
         if save is True:
             ani.save("3_link_Planar_Walker_Demo.gif")
-        plt.show()
+            print('The demo video is successfully saved!')
         return None
 
     def generate_walker(self, x, stanceleg_coord, step_interval_sample_count, tf):
@@ -73,8 +74,10 @@ class WalkerAnimator(object):
             # define a frame update function
             fig1 = plt.figure(figsize=(10,4))
             ax = plt.axes()
+            hip_traj_x, hip_traj_y, stance_traj_x, stance_traj_y = [], [], [], []
+            swing_traj_x, swing_traj_y, torso_traj_x, torso_traj_y = [], [], [], []
             def update(frame):
-                plt.cla()
+                ax.clear()
                 # add link between stance leg and hip
                 stance_coord = (stance_x[frame], stance_y[frame])
                 hip_coord = (hip_x[frame], hip_y[frame])
@@ -90,6 +93,17 @@ class WalkerAnimator(object):
                 ax.add_line(hip_to_torso_link)
                 ax.add_line(swing_to_hip_link)
                 ax.add_line(plt.Line2D((-100, 100), (0, 0), lw=1.0, color='k'))
+                ax.add_patch(self.add_mass_center(hip_coord))  # add center of mass for the hip
+                # add trajectory
+                hip_traj_x.append(hip_x[frame]), hip_traj_y.append(hip_y[frame])
+                stance_traj_x.append(stance_x[frame]), stance_traj_y.append(stance_y[frame])
+                swing_traj_x.append(swing_x[frame]), swing_traj_y.append(swing_y[frame])
+                torso_traj_x.append(torso_x[frame]), torso_traj_y.append(torso_y[frame])
+                ax.scatter(hip_traj_x, hip_traj_y, s=0.2, c='r', marker='o')
+                ax.scatter(stance_traj_x, stance_traj_y, s=0.2, c='r', marker='o')
+                ax.scatter(swing_traj_x, swing_traj_y, s=0.2, c='r', marker='o')
+                ax.scatter(torso_traj_x, torso_traj_y, s=0.2, c='r', marker='o')
+                # set up some plot attributes.
                 ax.set_xlim([-1, 7])
                 ax.set_ylim([-0.5, 2])
                 ax.set_xlabel('x-axis (m)')
@@ -113,6 +127,6 @@ class WalkerAnimator(object):
                           color=self.link_color)
         return link
 
-    def add_mass_center(self):
-
-        return None
+    def add_mass_center(self, pt):
+        circle = plt.Circle((pt[0], pt[1]), radius=self.mass_center_size, fc=self.mass_center_color)
+        return circle
