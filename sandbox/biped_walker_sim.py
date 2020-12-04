@@ -34,7 +34,7 @@ class Simulator(object):
         t = [t0]
         E = [(0, 0, 0)]  # energy list storing tuples of (kinetic, potential and total energy)
         v = [0]  # walking speed store list
-        cost = []
+        cost = [0]
         stanceleg_coord = [(0, 0)]
         step_interval_sample_count = []  # counts how many data points at each step interval
 
@@ -66,6 +66,7 @@ class Simulator(object):
             u.append(curr_u)
             E.append(self.compute_energy(curr_x))
             v.append(model.get_walking_speed(curr_x))
+            cost.append(sum(curr_u**2))
             # TODO: impact model when events happened (define the resets)
             if len(sol.t_events[0]) != 0:  # impact happens
                 z1_stance = side_tools.get_swingleg_end_coord(curr_x, curr_stanceleg_coord, r)[0]

@@ -62,7 +62,7 @@ def get_kinetic_energy(x, params):
 
     m = params[1]
     l = params[0]
-    theta = (np.pi / 2) - x[2]  # expressed w.r.t to inertial horizontal line
+    theta = x[2]  # should be expressed w.r.t to inertial horizontal line at the intended link start.
 
     xdot = np.array([x[5], x[3], x[4]]).reshape(3, 1)
     J_cm = (1/12) * m * l**2  # moment of inertia of the link about its center of mass

@@ -230,7 +230,7 @@ class BipedWalker3Link(object):
     def get_each_link_vel(self, x):
         # return each link's head velocity
         q1_dot = x[3]
-        q1 = np.pi/2 - x[0]
+        q1 = - (np.pi/2 - x[0])  # change of coordinate. expressed in inertial frame.
         R = np.array([[np.cos(q1), -np.sin(q1)],
                       [np.sin(q1), np.cos(q1)]])
         link2_vel = np.array([[0, -1], [1, 0]]) @ R @ np.array([self.r, 0]) * q1_dot
@@ -270,6 +270,10 @@ class BipedWalker3Link(object):
         joint_pos = self.get_each_joint_pos(x)
         hip_x, hip_y = joint_pos[1][0], joint_pos[1][1]
         q1, q2, q3, q1dot, q2dot, q3dot = x[0], x[1], x[2], x[3], x[4], x[5]
+        # change of coordinate
+        q1 = - (np.pi/2 - q1)
+        q2 = - (np.pi/2 + q2)
+        q3 = - (np.pi/2 - q1)
         link_vel = self.get_each_link_vel(x)
         link1_vel_x, link1_vel_y = link_vel[0][0], link_vel[0][1]
         link2_vel_x, link2_vel_y = link_vel[1][0], link_vel[1][1]

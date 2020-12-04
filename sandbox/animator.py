@@ -21,7 +21,7 @@ class WalkerAnimator(object):
         if display is True:
             plt.show()
         if save is True:
-            ani.save("3_link_Planar_Walker_Demo.gif")
+            ani.save("3_link_Planar_Walker_Demo.mp4")
             print('The demo video is successfully saved!')
             fig.savefig('demo')
         return None
@@ -76,10 +76,17 @@ class WalkerAnimator(object):
             # define a frame update function
             # fig1 = plt.figure(figsize=(10, 4))
             # ax = plt.axes()
-            fig1, ((ax1, ax2), (ax4, ax3)) = plt.subplots(2, 2, figsize=(15, 8))
+            # fig1, ((ax1, ax2), (ax4, ax3)) = plt.subplots(2, 2, figsize=(15, 8))
+            fig1 = plt.figure(figsize=(15, 8))
+            ax1 = fig1.add_subplot(2, 2, 1)
+            ax2 = fig1.add_subplot(2, 2, 2)
+            ax3 = fig1.add_subplot(2, 2, 4)
+            ax4 = fig1.add_subplot(2, 2, 3, projection='3d')
+            ax3_large_scale = ax3.twinx()
             hip_traj_x, hip_traj_y, stance_traj_x, stance_traj_y = [], [], [], []
             swing_traj_x, swing_traj_y, torso_traj_x, torso_traj_y = [], [], [], []
             t_frame, KE_curve, PE_curve, TE_curve, v_curve = [], [], [], [], []
+            q1_curve, q1dot_curve, q3dot_curve, cost_curve = [], [], [], []
             def update(frame):
                 ax1.clear()
                 # add link between stance leg and hip
@@ -130,12 +137,31 @@ class WalkerAnimator(object):
 
                 # plot walking speed and cost trajectory
                 v_curve.append(v[frame])
+                cost_curve.append(cost[frame])
                 ax3.plot(t_frame, v_curve, color='m')
-                ax3.legend(['Walking Speed'])
+                ax3_large_scale.plot(t_frame, cost_curve, color='c')
+                ax3.legend(['Walking Speed'], loc=2)
+                ax3_large_scale.legend(['Control Cost'], loc=0)
                 ax3.set_xlim([0, tf])
                 ax3.set_xlabel('Time (s)')
-                ax3.set_ylabel('Walking Speed (m/s) / Cost')
+                ax3.set_ylabel('Walking Speed (m/s)')
+                ax3_large_scale.set_ylabel('Cost')
+                ax3_large_scale.set_ylim([0, 100000])
                 ax3.set_title('Walking Speed and Cost of Locomotion')
+
+                # plot limit cycle
+                q1_curve.append(x[frame][0])
+                q1dot_curve.append(x[frame][3])
+                q3dot_curve.append(x[frame][5])
+                ax4.plot(q1_curve, q1dot_curve, q3dot_curve, color='k')
+                ax4.set_xlabel('theta 1 (stance leg)')
+                ax4.set_ylabel('omega 1 (stance leg)')
+                ax4.set_zlabel('omega 3 (torso)')
+                ax4.set_title('Low Dimentional Projection of Limit Cycle')
+                ax4.set_xlim([-3, 3])
+                ax4.set_ylim([-2, 5])
+                ax4.set_zlim([-2, 5])
+
                 return plt
 
             ani = animation.FuncAnimation(fig1, update, frames=[i for i in range(n_sample)], blit=False, repeat=False,
