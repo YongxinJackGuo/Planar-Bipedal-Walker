@@ -42,6 +42,45 @@ def test_LgLfy(x, m, mh, mt, l, r):
 
     return LgLfy
 
+def get_potential_energy(y_cm, params, g=9.81):
+    # a function that returns potential energy of a link
+    # params:
+    # y_cm: cartesian coordinate of the link's center of mass w.r.t inertial frame
+    # params: a tuple of link parameters consisting of link length and mass, (l, m)
+
+    m = params[1]
+    V = m * g * y_cm
+
+    return V
+
+def get_kinetic_energy(x, params):
+    # a function that returns kinetic energy of a link
+    # params:
+    # x: cartesian coordinate of the link start position and velocity w.r.t inertial frame.
+    # which is a tuple: (x, y, theta, xdot, ydot, thetadot)
+    # params: a tuple of link parameters consisting of link length and mass, (l, m)
+
+    m = params[1]
+    l = params[0]
+    theta = (np.pi / 2) - x[2]  # expressed w.r.t to inertial horizontal line
+
+    xdot = np.array([x[5], x[3], x[4]]).reshape(3, 1)
+    J_cm = (1/12) * m * l**2  # moment of inertia of the link about its center of mass
+    J = J_cm + m * (l / 2)**2  # moment of inertia of the link about its end using parallel axis theorem
+    d12 = -(m / 2) * ((l/2) * np.sin(theta))
+    d13 = -(m / 2) * (-(l/2) * np.cos(theta))
+    H = np.array([[J, d12, d13],
+                  [d12, m, 0],
+                  [d13, 0, m]])
+
+    K = (1/2) * xdot.T @ H @ xdot
+
+    # Please note: the equation for computing the kinetic energy of a link
+    # is from Dr.Grizzle's book: Feedback Control of Dynamic Bipedal Robot
+    # Locomotion at page 411
+
+    return K
+
 
 def hit_ground_for_5link():
     # z1_stance = stanceleg_coord[0]

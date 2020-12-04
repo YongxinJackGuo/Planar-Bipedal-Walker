@@ -13,6 +13,9 @@ class Simulator(object):
         self.stanceleg_coord = []
         self.t = []
         self.tf = 0
+        self.E = []
+        self.v = []
+        self.cost = []
         self.walker_type = walker_type
         self.step_interval_sample_count = []
 
@@ -29,8 +32,11 @@ class Simulator(object):
         x = [x0]
         u = []  # get the controller value at x
         t = [t0]
+        E = [(0, 0, 0)]  # energy list storing tuples of (kinetic, potential and total energy)
+        v = [0]  # walking speed store list
+        cost = []
         stanceleg_coord = [(0, 0)]
-        step_interval_sample_count = [];  # counts how many data points at each step interval
+        step_interval_sample_count = []  # counts how many data points at each step interval
 
         curr_x = x0
         curr_t = t0
@@ -58,6 +64,8 @@ class Simulator(object):
             t.append(curr_t)
             x.append(curr_x)
             u.append(curr_u)
+            E.append(self.compute_energy(curr_x))
+            v.append(model.get_walking_speed(curr_x))
             # TODO: impact model when events happened (define the resets)
             if len(sol.t_events[0]) != 0:  # impact happens
                 z1_stance = side_tools.get_swingleg_end_coord(curr_x, curr_stanceleg_coord, r)[0]
@@ -76,18 +84,26 @@ class Simulator(object):
         self.step_interval_sample_count = step_interval_sample_count  # for animation
 
         # update class member
-        self.x, self.u, self.stanceleg_coord, self.t, self.tf = x, u, stanceleg_coord, t, tf
+        self.x, self.u, self.stanceleg_coord, self.t = x, u, stanceleg_coord, t
+        self.tf, self.E, self.v, self.cost = tf, E, v, cost
 
         # print some meaningful information
         print("stance leg coordinate are: ", stanceleg_coord)
 
         return x, u, stanceleg_coord, t
 
+    def compute_energy(self, x):
+        # a function that returns the kinetic, potential and total energy of the robot at current moment
+        model = self.model
+        energy = model.get_energy(x)  # get kinetic, potential and total energy
+
+        return energy
+
     def animate(self, mass_center_size, mass_center_color, link_width, link_color, save, display):
         biped_walker_animator = WalkerAnimator(self.model, self.walker_type, mass_center_size,
                                                mass_center_color, link_width, link_color)
         biped_walker_animator.animate(self.x, self.stanceleg_coord, self.step_interval_sample_count,
-                                      self.tf, save, display)
+                                      self.tf, self.E, self.v, self.cost, save, display)
 
         return None
 

@@ -2,6 +2,7 @@ import numpy as np # import autograd version of numpy for jacobian calculation i
 from numpy.linalg import inv
 import scipy
 from sympy import *
+from utils import side_tools
 
 class BipedWalker3Link(object):
     def __init__(self):
@@ -213,5 +214,87 @@ class BipedWalker3Link(object):
 
         return E
 
+    def get_walking_speed(self, x):
+        hip_vel = self.get_hip_vel(x)
+        walking_speed = hip_vel[0]
 
+        return walking_speed
+
+    def get_hip_vel(self, x):
+        each_link_vel = self.get_each_link_vel(x)
+        # choose the hip speed along x-axis as the walking speed
+        hip_vel_x, hip_vel_y = each_link_vel[-1][0], each_link_vel[-1][1]
+
+        return (hip_vel_x, hip_vel_y)
+
+    def get_each_link_vel(self, x):
+        # return each link's head velocity
+        q1_dot = x[3]
+        q1 = np.pi/2 - x[0]
+        R = np.array([[np.cos(q1), -np.sin(q1)],
+                      [np.sin(q1), np.cos(q1)]])
+        link2_vel = np.array([[0, -1], [1, 0]]) @ R @ np.array([self.r, 0]) * q1_dot
+        link3_vel = link2_vel.copy()
+
+        return ((0,0), (link2_vel[0], link2_vel[1]), (link3_vel[0], link3_vel[1]))
+
+
+    def get_each_link_cm_pos(self, x):
+        # w.r.t stance leg frame.
+        joint_pos = self.get_each_joint_pos(x)
+        foot_x, foot_y, hip_x, hip_y = joint_pos[0][0], joint_pos[0][1], joint_pos[1][0], joint_pos[1][1]
+        swing_x, swing_y, torso_x, torso_y = joint_pos[2][0], joint_pos[2][1], joint_pos[3][0], joint_pos[3][1]
+
+        link1_cm = ((foot_x + hip_x)/2, (foot_y + hip_y)/2)
+        link2_cm = ((hip_x + swing_x)/2, (hip_y + swing_y)/2)
+        link3_cm = ((hip_x + torso_x)/2, (hip_y + torso_y)/2)
+
+        return (link1_cm, link2_cm, link3_cm)
+
+    def get_each_joint_pos(self, x):
+        # w.r.t stance leg frame.
+        q1, q2, q3 = x[0], x[1], x[2]
+        r, l = self.r, self.l
+        foot_x, foot_y = 0, 0
+        hip_x, hip_y = r * np.sin(q1), r * np.cos(q1)
+        torso_x, torso_y = hip_x + l * np.sin(q3), hip_y + l * np.cos(q1)
+        swing_x, swing_y = hip_x - r * np.sin(q2), hip_y - r * np.cos(q2)
+
+        return ((foot_x, foot_y), (hip_x, hip_y), (swing_x, swing_y), (torso_x, torso_y))
+
+    def get_energy(self, x):
+        # A function that returns kinetic, potential, and total energy under this configuration
+        r, l = self.r, self.l
+        m, mt, mh = self.m, self.mt, self.mh
+        legs_cm = self.get_each_link_cm_pos(x)
+        joint_pos = self.get_each_joint_pos(x)
+        hip_x, hip_y = joint_pos[1][0], joint_pos[1][1]
+        q1, q2, q3, q1dot, q2dot, q3dot = x[0], x[1], x[2], x[3], x[4], x[5]
+        link_vel = self.get_each_link_vel(x)
+        link1_vel_x, link1_vel_y = link_vel[0][0], link_vel[0][1]
+        link2_vel_x, link2_vel_y = link_vel[1][0], link_vel[1][1]
+        link3_vel_x, link3_vel_y = link_vel[2][0], link_vel[2][1]
+
+
+        # Compute potential energy
+        V_link1 = side_tools.get_potential_energy(legs_cm[0][1], params=(r, m))
+        V_link2 = side_tools.get_potential_energy(legs_cm[1][1], params=(r, m))
+        V_link3 = side_tools.get_potential_energy(legs_cm[2][1], params=(l, mt))
+        # Compute V for hip
+        V_hip = side_tools.get_potential_energy(hip_y, params=(0, mh))
+        V_total = V_link1 + V_link2 + V_link3 + V_hip
+
+        # Compute kinetic energy
+        K_link1 = side_tools.get_kinetic_energy((0, 0, q1, link1_vel_x, link1_vel_y, q1dot), params=(r, m))
+        K_link2 = side_tools.get_kinetic_energy((hip_x, hip_y, q2, link2_vel_x, link2_vel_y, q2dot), params=(r, m))
+        K_link3 = side_tools.get_kinetic_energy((hip_x, hip_y, q3, link3_vel_x, link3_vel_y, q3dot), params=(l, m))
+        # Compute K for hip
+        hip_vel = self.get_hip_vel(x)
+        K_hip = (1/2) * mh * sum(np.asarray(hip_vel)**2)
+        K_total = K_link1 + K_link2 + K_link3 + K_hip
+
+        # Compute total energy
+        total_E = K_total + V_total
+
+        return (K_total, V_total, total_E)
 

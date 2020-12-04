@@ -15,9 +15,9 @@ class WalkerAnimator(object):
         self.link_color = link_color
 
 
-    def animate(self, x, stanceleg_coord, step_interval_sample_count, tf, save, display):
+    def animate(self, x, stanceleg_coord, step_interval_sample_count, tf, E, v, cost, save, display):
         # TODO: Finish the animation code
-        ani, fig= self.generate_walker(x, stanceleg_coord, step_interval_sample_count, tf)
+        ani, fig = self.generate_walker(x, stanceleg_coord, step_interval_sample_count, tf, E, v, cost)
         if display is True:
             plt.show()
         if save is True:
@@ -26,7 +26,7 @@ class WalkerAnimator(object):
             fig.savefig('demo')
         return None
 
-    def generate_walker(self, x, stanceleg_coord, step_interval_sample_count, tf):
+    def generate_walker(self, x, stanceleg_coord, step_interval_sample_count, tf, E, v, cost):
         n_sample = len(x)
         interval = (tf / n_sample) * 1000
         if self.walker_type == "3link":
@@ -74,12 +74,14 @@ class WalkerAnimator(object):
                 interval_start_index = interval_end_index
 
             # define a frame update function
-            fig1 = plt.figure(figsize=(10, 4))
-            ax = plt.axes()
+            # fig1 = plt.figure(figsize=(10, 4))
+            # ax = plt.axes()
+            fig1, ((ax1, ax2), (ax4, ax3)) = plt.subplots(2, 2, figsize=(15, 8))
             hip_traj_x, hip_traj_y, stance_traj_x, stance_traj_y = [], [], [], []
             swing_traj_x, swing_traj_y, torso_traj_x, torso_traj_y = [], [], [], []
+            t_frame, KE_curve, PE_curve, TE_curve, v_curve = [], [], [], [], []
             def update(frame):
-                ax.clear()
+                ax1.clear()
                 # add link between stance leg and hip
                 stance_coord = (stance_x[frame], stance_y[frame])
                 hip_coord = (hip_x[frame], hip_y[frame])
@@ -91,26 +93,49 @@ class WalkerAnimator(object):
                 swing_coord = (swing_x[frame], swing_y[frame])
                 swing_to_hip_link = self.add_link(swing_coord, hip_coord)
                 # add plot
-                ax.add_line(stance_to_hip_link)
-                ax.add_line(hip_to_torso_link)
-                ax.add_line(swing_to_hip_link)
-                ax.add_line(plt.Line2D((-100, 100), (0, 0), lw=1.0, color='k'))
-                ax.add_patch(self.add_mass_center(hip_coord))  # add center of mass for the hip
+                ax1.add_line(stance_to_hip_link)
+                ax1.add_line(hip_to_torso_link)
+                ax1.add_line(swing_to_hip_link)
+                ax1.add_line(plt.Line2D((-100, 100), (0, 0), lw=1.0, color='k'))
+                ax1.add_patch(self.add_mass_center(hip_coord))  # add center of mass for the hip
                 # add trajectory
                 hip_traj_x.append(hip_x[frame]), hip_traj_y.append(hip_y[frame])
                 stance_traj_x.append(stance_x[frame]), stance_traj_y.append(stance_y[frame])
                 swing_traj_x.append(swing_x[frame]), swing_traj_y.append(swing_y[frame])
                 torso_traj_x.append(torso_x[frame]), torso_traj_y.append(torso_y[frame])
-                ax.scatter(hip_traj_x, hip_traj_y, s=0.2, c='r', marker='o')
-                ax.scatter(stance_traj_x, stance_traj_y, s=0.2, c='r', marker='o')
-                ax.scatter(swing_traj_x, swing_traj_y, s=0.2, c='r', marker='o')
-                ax.scatter(torso_traj_x, torso_traj_y, s=0.2, c='r', marker='o')
+                ax1.scatter(hip_traj_x, hip_traj_y, s=0.2, c='r', marker='o')
+                ax1.scatter(stance_traj_x, stance_traj_y, s=0.2, c='r', marker='o')
+                ax1.scatter(swing_traj_x, swing_traj_y, s=0.2, c='r', marker='o')
+                ax1.scatter(torso_traj_x, torso_traj_y, s=0.2, c='r', marker='o')
                 # set up some plot attributes.
-                ax.set_xlim([-1, 7])
-                ax.set_ylim([-0.5, 2])
-                ax.set_xlabel('x-axis (m)')
-                ax.set_ylabel('y-axis (m)')
-                ax.set_aspect('equal')
+                ax1.set_xlim([-1, 7])
+                ax1.set_ylim([-0.5, 2])
+                ax1.set_xlabel('x-axis (m)')
+                ax1.set_ylabel('y-axis (m)')
+                ax1.set_aspect('equal')
+                ax1.set_title('3-link Biped Walker Simulation')
+
+                # plot energy
+                t_frame.append(frame * interval / 1000)
+                KE_curve.append(E[frame][0])
+                PE_curve.append(E[frame][1])
+                TE_curve.append(E[frame][2])
+                ax2.plot(t_frame, KE_curve, color='r')
+                ax2.plot(t_frame, PE_curve, color='g')
+                ax2.plot(t_frame, TE_curve, color='b')
+                ax2.legend(['Kinetic Energy', 'Potential Energy', 'Total Energy'])
+                ax2.set_xlim([0, tf])
+                ax2.set_ylabel('Energy (J)')
+                ax2.set_title('Energy Landscape')
+
+                # plot walking speed and cost trajectory
+                v_curve.append(v[frame])
+                ax3.plot(t_frame, v_curve, color='m')
+                ax3.legend(['Walking Speed'])
+                ax3.set_xlim([0, tf])
+                ax3.set_xlabel('Time (s)')
+                ax3.set_ylabel('Walking Speed (m/s) / Cost')
+                ax3.set_title('Walking Speed and Cost of Locomotion')
                 return plt
 
             ani = animation.FuncAnimation(fig1, update, frames=[i for i in range(n_sample)], blit=False, repeat=False,
