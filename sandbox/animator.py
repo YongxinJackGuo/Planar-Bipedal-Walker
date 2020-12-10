@@ -74,9 +74,6 @@ class WalkerAnimator(object):
                 interval_start_index = interval_end_index
 
             # define a frame update function
-            # fig1 = plt.figure(figsize=(10, 4))
-            # ax = plt.axes()
-            # fig1, ((ax1, ax2), (ax4, ax3)) = plt.subplots(2, 2, figsize=(15, 8))
             fig1 = plt.figure(figsize=(15, 8))
             ax1 = fig1.add_subplot(2, 2, 1)
             ax2 = fig1.add_subplot(2, 2, 2)

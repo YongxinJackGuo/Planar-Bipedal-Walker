@@ -37,11 +37,11 @@ class Simulator(object):
         cost = [0]
         stanceleg_coord = [(0, 0)]
         step_interval_sample_count = []  # counts how many data points at each step interval
+        x_minus = []  # states right before impact, used for plotting return map
 
         curr_x = x0
         curr_t = t0
         curr_stanceleg_coord = (0, 0)
-
 
         while curr_t < tf:
             hit_flag = False  # turn off the flag until impact comes
@@ -73,6 +73,7 @@ class Simulator(object):
                 curr_stanceleg_coord = (z1_stance, 0)
                 stanceleg_coord.append(curr_stanceleg_coord)
                 step_interval_sample_count.append(len(x))
+                x_minus.append(x[-1])  # the last state of current state sequence is the x_minus
                 # impact map, resets the state
                 curr_x = model.impact_dynamics(curr_x)
                 impact_times += 1
@@ -91,7 +92,7 @@ class Simulator(object):
         # print some meaningful information
         print("stance leg coordinate are: ", stanceleg_coord)
 
-        return x, u, stanceleg_coord, t
+        return x, u, x_minus, stanceleg_coord, t
 
     def compute_energy(self, x):
         # a function that returns the kinetic, potential and total energy of the robot at current moment

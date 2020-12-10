@@ -4,7 +4,7 @@ from numpy.linalg import inv
 from sympy import *
 
 class HybridZeroDynamicsController(object):
-    def __init__(self, model):
+    def __init__(self, model, effort_limit=None):
         self.opt_coeff = get_opt_coeff()
         self.model = model
         self.th1d = model.th1d
@@ -12,6 +12,7 @@ class HybridZeroDynamicsController(object):
         self.epsilon = 0.1
         self.alpha = 0.9
         self.n = model.n
+        self.effort_limit = effort_limit
         # Compute all the required closed form during instantiation.
         self.Lfy, self.L2fy, self.LgLfy = self.get_symbolic_eqns()
         print("Control input closed form function derivation finished")
@@ -38,6 +39,11 @@ class HybridZeroDynamicsController(object):
         LgLfy_inv_value = inv(np.asarray(LgLfy_value))
         u = LgLfy_inv_value @ (psi - np.asarray(L2fy_value))
         # print("My LgLfy value is: ", np.asarray(LgLfy_value))
+
+        # Clip the control effort if it is required
+        effort_limit = self.effort_limit
+        if effort_limit is not None:
+            u = np.clip(u, a_min=effort_limit[0], a_max=effort_limit[1])
 
         return u
 
@@ -158,6 +164,8 @@ class HybridZeroDynamicsController(object):
         n = self.n
         y = np.zeros((n-1,))
         th1d = self.th1d
+        th3d_bias_coeff = 1  # if torso angle is too small, no motivation for going forward
+
         opt_coeff = self.opt_coeff
         a00, a01, a02, a03 = opt_coeff[0], opt_coeff[1], opt_coeff[2], opt_coeff[3]
         a10, a11, a12, a13 = opt_coeff[4], opt_coeff[5], opt_coeff[6], opt_coeff[7]
@@ -167,7 +175,7 @@ class HybridZeroDynamicsController(object):
         # Use the following two desired trajectory when doing the LgLfy checking.
         # h1d = 0
         # h2d = -th1
-        h1 = th3 - h1d
+        h1 = th3 - h1d * th3d_bias_coeff
         h2 = th2 - h2d
         # define the system output
         y = np.array([h1, h2])

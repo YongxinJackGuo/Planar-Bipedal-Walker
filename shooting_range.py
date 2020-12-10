@@ -48,13 +48,7 @@ th3 = calc(th1)
 
 fig1 = plt.figure()
 
-# line = plt.Line2D((2, 8), (6, 6), lw=2.5, color='r')
-# line1 = plt.Line2D((5, 8), (4, 6), lw=2.5, color='r')
-#
-# plt.gca().add_line(line)
-# plt.gca().add_line(line1)
 
-# plt.show()
 
 def update(frame):
     line = plt.Line2D((2*frame, 8), (6*frame, 6), lw=2.5, color='r')
