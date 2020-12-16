@@ -164,7 +164,7 @@ class HybridZeroDynamicsController(object):
         n = self.n
         y = np.zeros((n-1,))
         th1d = self.th1d
-        th3d_bias_coeff = 1  # if torso angle is too small, no motivation for going forward
+        th3d_bias_coeff = 2  # if torso angle is too small, no motivation for going forward
 
         opt_coeff = self.opt_coeff
         a00, a01, a02, a03 = opt_coeff[0], opt_coeff[1], opt_coeff[2], opt_coeff[3]
